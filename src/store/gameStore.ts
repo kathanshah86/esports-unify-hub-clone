@@ -323,10 +323,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
         .subscribe();
         
     } catch (error) {
-      console.error('Failed to initialize store:', error);
-      set({ error: 'Failed to load data', isLoading: false });
+      console.error('Failed to initialize store (non-fatal):', error);
+      // Realtime subscriptions or other non-critical errors shouldn't block the UI
+      set({ isLoading: false });
+      initStarted = false;
     }
   },
+
   
   addTournament: async (tournament) => {
     try {
