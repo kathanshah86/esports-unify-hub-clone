@@ -212,10 +212,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setError: (error) => set({ error }),
   
   initialize: async () => {
-    // Prevent re-initialization
-    const state = get() as any;
-    if (state._initialized || state._initializing) return;
-    (get() as any)._initializing = true;
+    if (initStarted) return;
+    initStarted = true;
+
 
     
     try {
