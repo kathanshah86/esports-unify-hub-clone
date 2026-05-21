@@ -212,9 +212,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setError: (error) => set({ error }),
   
   initialize: async () => {
-    // Prevent re-initialization if data already loaded
-    const state = get();
-    if (state.tournaments.length > 0 && !state.error) return;
+    // Prevent re-initialization
+    const state = get() as any;
+    if (state._initialized || state._initializing) return;
+    (get() as any)._initializing = true;
+
     
     try {
       set({ isLoading: true, error: null });
