@@ -6,11 +6,13 @@ import { Tournament, Player, Match, OverviewContent, ScheduleContent, PrizesCont
 const convertToTournament = (dbRow: any): Tournament => {
   return {
     ...dbRow,
+    banner: dbRow.banner_url || dbRow.banner || dbRow.image_url,
     overview_content: dbRow.overview_content ? (dbRow.overview_content as OverviewContent) : undefined,
     schedule_content: dbRow.schedule_content ? (dbRow.schedule_content as ScheduleContent) : undefined,
     prizes_content: dbRow.prizes_content ? (dbRow.prizes_content as PrizesContent) : undefined,
   };
 };
+
 
 // Helper function to convert Tournament to database format
 const convertToDbFormat = (tournament: any) => {
