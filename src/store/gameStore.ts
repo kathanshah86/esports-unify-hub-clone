@@ -199,7 +199,10 @@ const mockTransactions: WalletTransaction[] = [
   }
 ];
 
+let initStarted = false;
+
 export const useGameStore = create<GameStore>((set, get) => ({
+
   tournaments: [],
   players: [],
   matches: [],
