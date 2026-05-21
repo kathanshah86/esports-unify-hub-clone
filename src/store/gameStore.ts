@@ -199,7 +199,10 @@ const mockTransactions: WalletTransaction[] = [
   }
 ];
 
+let initStarted = false;
+
 export const useGameStore = create<GameStore>((set, get) => ({
+
   tournaments: [],
   players: [],
   matches: [],
@@ -212,9 +215,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setError: (error) => set({ error }),
   
   initialize: async () => {
-    // Prevent re-initialization if data already loaded
-    const state = get();
-    if (state.tournaments.length > 0 && !state.error) return;
+    if (initStarted) return;
+    initStarted = true;
+
+
     
     try {
       set({ isLoading: true, error: null });
