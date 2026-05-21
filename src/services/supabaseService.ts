@@ -47,14 +47,19 @@ export const tournamentService = {
 
   async create(tournament: Omit<Tournament, 'id' | 'created_at' | 'updated_at'>): Promise<Tournament> {
     // Clean up the tournament data - remove empty strings and undefined values
-    let tournamentData = { ...tournament };
-    
+    let tournamentData: any = { ...tournament };
+
+    // Map form-only field names to actual DB columns
+    if (tournamentData.banner && !tournamentData.banner_url) {
+      tournamentData.banner_url = tournamentData.banner;
+    }
+
     // Remove fields that don't exist in the database
-    const invalidFields = ['image', 'highlights', 'winners', 'prizes', 'start_time', 'end_time', 'registration_opens', 'registration_closes', 'entry_fee_type'];
+    const invalidFields = ['image', 'banner', 'highlights', 'winners', 'prizes', 'start_time', 'end_time', 'registration_opens', 'registration_closes', 'entry_fee_type'];
     invalidFields.forEach(field => {
       delete tournamentData[field];
     });
-    
+
     // Remove empty string values to prevent database errors
     Object.keys(tournamentData).forEach(key => {
       if (tournamentData[key] === '' || tournamentData[key] === undefined || tournamentData[key] === null) {
@@ -97,14 +102,19 @@ export const tournamentService = {
 
   async update(id: string, tournament: Partial<Tournament>): Promise<Tournament> {
     // Clean up the tournament data - remove empty strings and undefined values
-    let updateData = { ...tournament };
-    
+    let updateData: any = { ...tournament };
+
+    // Map form-only field names to actual DB columns
+    if (updateData.banner && !updateData.banner_url) {
+      updateData.banner_url = updateData.banner;
+    }
+
     // Remove fields that don't exist in the database
-    const invalidFields = ['image', 'highlights', 'winners', 'prizes', 'start_time', 'end_time', 'registration_opens', 'registration_closes', 'entry_fee_type'];
+    const invalidFields = ['image', 'banner', 'highlights', 'winners', 'prizes', 'start_time', 'end_time', 'registration_opens', 'registration_closes', 'entry_fee_type'];
     invalidFields.forEach(field => {
       delete updateData[field];
     });
-    
+
     // Remove empty string values to prevent database errors
     Object.keys(updateData).forEach(key => {
       if (updateData[key] === '' || updateData[key] === undefined || updateData[key] === null) {
