@@ -330,7 +330,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
-  },
   
   addTournament: async (tournament) => {
     try {
