@@ -1718,6 +1718,10 @@ export type Database = {
         Returns: Json
       }
       refresh_team_member_counts: { Args: never; Returns: undefined }
+      sync_tournament_participant_count: {
+        Args: { _tournament_id: string }
+        Returns: undefined
+      }
       validate_referral_code: { Args: { _code: string }; Returns: string }
     }
     Enums: {
