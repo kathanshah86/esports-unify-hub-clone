@@ -44,7 +44,31 @@ export const tournamentService = {
       console.error('Error fetching tournaments:', error);
       return [];
     }
-    return (data || []).map(convertToTournament);
+
+    const tournaments = (data || []).map(convertToTournament);
+
+    // Compute live participant counts from tournament_registrations
+    try {
+      const { data: regs } = await supabase
+        .from('tournament_registrations')
+        .select('tournament_id');
+
+      const counts = new Map<string, number>();
+      (regs || []).forEach((r: any) => {
+        counts.set(r.tournament_id, (counts.get(r.tournament_id) || 0) + 1);
+      });
+
+      tournaments.forEach((t: any) => {
+        const live = counts.get(t.id) || 0;
+        if (live > (t.current_participants || 0)) {
+          t.current_participants = live;
+        }
+      });
+    } catch (e) {
+      console.error('Failed to compute participant counts:', e);
+    }
+
+    return tournaments;
   },
 
   async create(tournament: Omit<Tournament, 'id' | 'created_at' | 'updated_at'>): Promise<Tournament> {
