@@ -206,7 +206,89 @@ const WalletAdmin = ({ mode = 'esports' }: WalletAdminProps) => {
         <span className={`text-${modeColor}-400 font-medium`}>{modeLabel} Wallet</span>
       </div>
 
+      {/* Credit Winning Amount */}
+      <Card className="bg-gradient-to-br from-yellow-900/30 to-amber-800/20 border-yellow-500/30">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center">
+            <Trophy className="w-5 h-5 mr-2 text-yellow-400" />
+            Credit Tournament Prize to User ({modeLabel})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-[160px_1fr_auto] gap-3">
+            <div>
+              <Label className="text-gray-300 text-xs">Lookup by</Label>
+              <Select value={lookupType} onValueChange={(v) => { setLookupType(v as LookupType); setFoundUser(null); }}>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="phone">Phone Number</SelectItem>
+                  <SelectItem value="user_id">User ID</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-gray-300 text-xs">{lookupType === 'email' ? 'Email address' : lookupType === 'phone' ? 'Phone number' : 'User ID (UUID)'}</Label>
+              <Input
+                value={lookupValue}
+                onChange={(e) => setLookupValue(e.target.value)}
+                placeholder={lookupType === 'email' ? 'user@example.com' : lookupType === 'phone' ? '9876543210' : 'uuid'}
+                className="bg-gray-700 border-gray-600 text-white"
+              />
+            </div>
+            <div className="flex items-end">
+              <Button onClick={handleSearchUser} disabled={searching} className="bg-blue-600 hover:bg-blue-700">
+                <Search className="w-4 h-4 mr-1" />
+                {searching ? 'Searching...' : 'Find User'}
+              </Button>
+            </div>
+          </div>
+
+          {foundUser && (
+            <div className="bg-gray-800/60 border border-gray-700 rounded-lg p-4 space-y-3">
+              <div className="grid sm:grid-cols-2 gap-2 text-sm">
+                <div><span className="text-gray-400">Name:</span> <span className="text-white">{foundUser.display_name || foundUser.username || '—'}</span></div>
+                <div><span className="text-gray-400">Email:</span> <span className="text-white">{foundUser.email || '—'}</span></div>
+                <div><span className="text-gray-400">Phone:</span> <span className="text-white">{foundUser.phone_number || '—'}</span></div>
+                <div><span className="text-gray-400">User ID:</span> <span className="text-purple-400 font-mono text-xs">{foundUser.user_id}</span></div>
+              </div>
+              <div className="grid md:grid-cols-[180px_1fr_auto] gap-3">
+                <div>
+                  <Label className="text-gray-300 text-xs">Prize Amount (₹)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={prizeAmount}
+                    onChange={(e) => setPrizeAmount(e.target.value)}
+                    placeholder="500"
+                    className="bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+                <div>
+                  <Label className="text-gray-300 text-xs">Note / Tournament</Label>
+                  <Input
+                    value={prizeNote}
+                    onChange={(e) => setPrizeNote(e.target.value)}
+                    placeholder="e.g. BGMI Solo Cup - 1st place"
+                    className="bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button onClick={handleCreditPrize} disabled={crediting} className="bg-green-600 hover:bg-green-700">
+                    <Trophy className="w-4 h-4 mr-1" />
+                    {crediting ? 'Crediting...' : 'Credit Prize'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid md:grid-cols-3 gap-6">
+
         <Card className="bg-gradient-to-br from-green-900/50 to-green-800/50 border-green-500/30">
           <CardContent className="p-6 text-center">
             <DollarSign className="w-8 h-8 text-green-400 mx-auto mb-2" />
