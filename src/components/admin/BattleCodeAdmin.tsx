@@ -42,7 +42,93 @@ const BattleCodeAdmin = ({ mode = 'esports' }: BattleCodeAdminProps) => {
 
   useEffect(() => {
     loadCodes();
+    loadRedemptions();
   }, [mode]);
+
+  const loadRedemptions = async () => {
+    setRedemptionsLoading(true);
+    try {
+      // 1. redemptions for this mode
+      const { data: reds, error } = await supabase
+        .from('battle_code_redemptions')
+        .select('id, code_id, user_id, amount, mode, redeemed_at')
+        .eq('mode', mode)
+        .order('redeemed_at', { ascending: false });
+      if (error) throw error;
+      const redemptionsData = reds || [];
+
+      const codeIds = Array.from(new Set(redemptionsData.map(r => r.code_id).filter(Boolean)));
+      const userIds = Array.from(new Set(redemptionsData.map(r => r.user_id).filter(Boolean)));
+
+      const [{ data: codesData }, { data: profilesData }] = await Promise.all([
+        codeIds.length
+          ? supabase.from('battle_codes').select('id, code, bonus_amount').in('id', codeIds)
+          : Promise.resolve({ data: [] as any[] }),
+        userIds.length
+          ? supabase.from('profiles').select('user_id, username, display_name, email, phone_number').in('user_id', userIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+
+      const codeMap = new Map((codesData || []).map((c: any) => [c.id, c]));
+      const userMap = new Map((profilesData || []).map((p: any) => [p.user_id, p]));
+
+      // 2. tournament registrations that used these codes (to know which tournament(s))
+      const codeStrings = Array.from(new Set((codesData || []).map((c: any) => c.code).filter(Boolean)));
+      let regsByUserCode = new Map<string, any[]>();
+      let tournamentMap = new Map<string, { id: string; name: string }>();
+      if (codeStrings.length && userIds.length) {
+        const { data: regs } = await supabase
+          .from('tournament_registrations')
+          .select('user_id, referral_code_used, tournament_id, created_at')
+          .in('referral_code_used', codeStrings)
+          .in('user_id', userIds);
+
+        const tIds = Array.from(new Set((regs || []).map((r: any) => r.tournament_id).filter(Boolean)));
+        if (tIds.length) {
+          const { data: tData } = await supabase
+            .from('tournaments')
+            .select('id, name')
+            .in('id', tIds);
+          (tData || []).forEach((t: any) => tournamentMap.set(t.id, t));
+        }
+        (regs || []).forEach((r: any) => {
+          const key = `${r.user_id}__${(r.referral_code_used || '').toUpperCase()}`;
+          if (!regsByUserCode.has(key)) regsByUserCode.set(key, []);
+          regsByUserCode.get(key)!.push(r);
+        });
+      }
+
+      const enriched = redemptionsData.map((r: any) => {
+        const code = codeMap.get(r.code_id);
+        const user = userMap.get(r.user_id);
+        const key = `${r.user_id}__${(code?.code || '').toUpperCase()}`;
+        const regs = regsByUserCode.get(key) || [];
+        const usedTournaments = regs
+          .map((reg: any) => tournamentMap.get(reg.tournament_id))
+          .filter(Boolean);
+        return { ...r, code, user, usedTournaments };
+      });
+
+      setRedemptions(enriched);
+      setTournaments(Array.from(tournamentMap.values()));
+    } catch (err) {
+      console.error('Failed to load redemptions:', err);
+    } finally {
+      setRedemptionsLoading(false);
+    }
+  };
+
+  const filteredRedemptions = useMemo(() => {
+    if (tournamentFilter === 'all') return redemptions;
+    if (tournamentFilter === 'none') {
+      return redemptions.filter(r => !r.usedTournaments || r.usedTournaments.length === 0);
+    }
+    return redemptions.filter(r =>
+      (r.usedTournaments || []).some((t: any) => t.id === tournamentFilter)
+    );
+  }, [redemptions, tournamentFilter]);
+
+
 
   const loadCodes = async () => {
     try {
