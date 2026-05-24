@@ -31,6 +31,16 @@ const WalletAdmin = ({ mode = 'esports' }: WalletAdminProps) => {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [adminNotes, setAdminNotes] = useState<{ [key: string]: string }>({});
   const [screenshotModal, setScreenshotModal] = useState<string | null>(null);
+
+  // Add winning state
+  const [lookupType, setLookupType] = useState<LookupType>('email');
+  const [lookupValue, setLookupValue] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [foundUser, setFoundUser] = useState<FoundUser | null>(null);
+  const [prizeAmount, setPrizeAmount] = useState('');
+  const [prizeNote, setPrizeNote] = useState('');
+  const [crediting, setCrediting] = useState(false);
+
   const { toast } = useToast();
 
   useEffect(() => {
