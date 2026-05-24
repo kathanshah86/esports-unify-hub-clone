@@ -3,13 +3,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Check, X, DollarSign, TrendingUp, TrendingDown, Clock, Image, ExternalLink } from 'lucide-react';
+import { Check, X, DollarSign, TrendingUp, TrendingDown, Clock, Image, ExternalLink, Trophy, Search } from 'lucide-react';
 import { walletService, WalletTransaction, WalletMode } from '@/services/walletService';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface WalletAdminProps {
   mode?: WalletMode;
+}
+
+type LookupType = 'email' | 'phone' | 'user_id';
+interface FoundUser {
+  user_id: string;
+  email: string | null;
+  phone_number: string | null;
+  username: string | null;
+  display_name: string | null;
 }
 
 const WalletAdmin = ({ mode = 'esports' }: WalletAdminProps) => {
