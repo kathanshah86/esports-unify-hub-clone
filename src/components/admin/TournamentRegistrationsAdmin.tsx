@@ -151,6 +151,26 @@ const TournamentRegistrationsAdmin = () => {
       if (error) throw error;
       const regs = (data || []) as Registration[];
 
+      // Fetch user profile info for each registration (email, phone, username)
+      const userIds = Array.from(new Set(regs.map(r => r.user_id).filter(Boolean)));
+      if (userIds.length > 0) {
+        const { data: userProfs } = await supabase
+          .from('profiles')
+          .select('user_id, username, display_name, email, phone_number, in_game_name')
+          .in('user_id', userIds);
+        const uMap = new Map((userProfs || []).map(p => [p.user_id, p]));
+        regs.forEach(r => {
+          const p = uMap.get(r.user_id);
+          if (p) {
+            r.user_email = p.email || null;
+            r.user_phone = p.phone_number || null;
+            r.user_username = p.username || null;
+            r.user_display_name = p.display_name || null;
+            r.user_in_game_name = p.in_game_name || null;
+          }
+        });
+      }
+
       // Fetch referrer profile info for registrations that used a battle code
       const referrerIds = Array.from(
         new Set(regs.map(r => r.referrer_user_id).filter((x): x is string => !!x))
