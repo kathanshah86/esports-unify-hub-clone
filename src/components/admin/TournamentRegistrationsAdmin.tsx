@@ -505,7 +505,25 @@ const TournamentRegistrationsAdmin = () => {
                               </div>
                             </div>
                           )}
-                          <div className="text-gray-500 text-xs">
+                          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs bg-gray-800/40 rounded p-2 border border-gray-700/50">
+                            {registration.user_email && (
+                              <div className="text-gray-400">Email: <span className="text-white">{registration.user_email}</span></div>
+                            )}
+                            {registration.user_phone && (
+                              <div className="text-gray-400">Phone: <span className="text-white">{registration.user_phone}</span></div>
+                            )}
+                            {registration.user_username && (
+                              <div className="text-gray-400">Username: <span className="text-white">{registration.user_username}</span></div>
+                            )}
+                            {registration.user_display_name && (
+                              <div className="text-gray-400">Name: <span className="text-white">{registration.user_display_name}</span></div>
+                            )}
+                            {registration.user_in_game_name && (
+                              <div className="text-gray-400">IGN: <span className="text-white">{registration.user_in_game_name}</span></div>
+                            )}
+                            <div className="text-gray-400">User ID: <span className="text-white font-mono">{registration.user_id.slice(0, 8)}…</span></div>
+                          </div>
+                          <div className="text-gray-500 text-xs mt-1">
                             {new Date(registration.created_at || '').toLocaleString()}
                           </div>
                         </div>
