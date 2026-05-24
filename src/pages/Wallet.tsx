@@ -335,11 +335,11 @@ const Wallet = forwardRef<HTMLDivElement>((_, ref) => {
       setWithdrawName('');
       setWithdrawMobile('');
       loadWalletData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting withdrawal:', error);
       toast({
         title: "Request Failed",
-        description: "Failed to submit withdrawal request. Please try again.",
+        description: error?.message || "Failed to submit withdrawal request. Please try again.",
         variant: "destructive"
       });
     } finally {
