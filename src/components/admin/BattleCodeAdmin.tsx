@@ -22,6 +22,13 @@ const BattleCodeAdmin = ({ mode = 'esports' }: BattleCodeAdminProps) => {
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingCode, setEditingCode] = useState<BattleCode | null>(null);
+
+  // Redemptions state
+  const [redemptions, setRedemptions] = useState<any[]>([]);
+  const [redemptionsLoading, setRedemptionsLoading] = useState(false);
+  const [tournaments, setTournaments] = useState<{ id: string; name: string }[]>([]);
+  const [tournamentFilter, setTournamentFilter] = useState<string>('all');
+
   const { toast } = useToast();
 
   // Form state
