@@ -463,6 +463,77 @@ const BattleCodeAdmin = ({ mode = 'esports' }: BattleCodeAdminProps) => {
           )}
         </CardContent>
       </Card>
+
+      {/* Redemptions */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <CardTitle className="text-white flex items-center">
+            <History className="w-5 h-5 mr-2" />
+            Battle Code Redemptions ({filteredRedemptions.length})
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Label className="text-gray-400 text-sm whitespace-nowrap">Filter by tournament:</Label>
+            <Select value={tournamentFilter} onValueChange={setTournamentFilter}>
+              <SelectTrigger className="w-64 bg-gray-900 border-gray-700 text-white">
+                <SelectValue placeholder="All tournaments" />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-900 border-gray-700 max-h-72">
+                <SelectItem value="all">All tournaments</SelectItem>
+                <SelectItem value="none">No tournament registered</SelectItem>
+                {tournaments.map(t => (
+                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {redemptionsLoading ? (
+            <div className="text-center text-gray-400 py-6">Loading redemptions...</div>
+          ) : filteredRedemptions.length === 0 ? (
+            <div className="text-center text-gray-400 py-6">No redemptions found</div>
+          ) : (
+            <div className="space-y-3">
+              {filteredRedemptions.map((r) => (
+                <div key={r.id} className="bg-gray-700/50 border border-gray-600 rounded-lg p-3">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono font-bold text-white">{r.code?.code || '—'}</span>
+                        <Badge className="bg-green-600">₹{Number(r.amount).toFixed(2)}</Badge>
+                        <span className="text-gray-400 text-xs">
+                          {format(new Date(r.redeemed_at), 'dd MMM yyyy, HH:mm')}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-300">
+                        <span className="text-gray-500">User:</span>{' '}
+                        {r.user?.display_name || r.user?.username || '—'}
+                      </div>
+                      <div className="text-xs text-gray-400 flex flex-wrap gap-x-4">
+                        {r.user?.email && <span>Email: <span className="text-white">{r.user.email}</span></span>}
+                        {r.user?.phone_number && <span>Phone: <span className="text-white">{r.user.phone_number}</span></span>}
+                      </div>
+                    </div>
+                    <div className="text-xs">
+                      {r.usedTournaments && r.usedTournaments.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 justify-end">
+                          {r.usedTournaments.map((t: any) => (
+                            <Badge key={t.id} className="bg-purple-600/70">{t.name}</Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="border-gray-500 text-gray-400">
+                          Not used for tournament yet
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
