@@ -3,13 +3,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Check, X, DollarSign, TrendingUp, TrendingDown, Clock, Image, ExternalLink } from 'lucide-react';
+import { Check, X, DollarSign, TrendingUp, TrendingDown, Clock, Image, ExternalLink, Trophy, Search } from 'lucide-react';
 import { walletService, WalletTransaction, WalletMode } from '@/services/walletService';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface WalletAdminProps {
   mode?: WalletMode;
+}
+
+type LookupType = 'email' | 'phone' | 'user_id';
+interface FoundUser {
+  user_id: string;
+  email: string | null;
+  phone_number: string | null;
+  username: string | null;
+  display_name: string | null;
 }
 
 const WalletAdmin = ({ mode = 'esports' }: WalletAdminProps) => {
@@ -18,6 +31,16 @@ const WalletAdmin = ({ mode = 'esports' }: WalletAdminProps) => {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [adminNotes, setAdminNotes] = useState<{ [key: string]: string }>({});
   const [screenshotModal, setScreenshotModal] = useState<string | null>(null);
+
+  // Add winning state
+  const [lookupType, setLookupType] = useState<LookupType>('email');
+  const [lookupValue, setLookupValue] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [foundUser, setFoundUser] = useState<FoundUser | null>(null);
+  const [prizeAmount, setPrizeAmount] = useState('');
+  const [prizeNote, setPrizeNote] = useState('');
+  const [crediting, setCrediting] = useState(false);
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -80,6 +103,69 @@ const WalletAdmin = ({ mode = 'esports' }: WalletAdminProps) => {
     }
   };
 
+  const handleSearchUser = async () => {
+    const val = lookupValue.trim();
+    if (!val) {
+      toast({ title: 'Enter a value', description: 'Provide an email, phone, or user ID', variant: 'destructive' });
+      return;
+    }
+    setSearching(true);
+    setFoundUser(null);
+    try {
+      let query = supabase.from('profiles').select('user_id, email, phone_number, username, display_name').limit(1);
+      if (lookupType === 'email') query = query.ilike('email', val);
+      else if (lookupType === 'phone') query = query.eq('phone_number', val);
+      else query = query.eq('user_id', val);
+
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        toast({ title: 'User not found', description: `No profile matched that ${lookupType}`, variant: 'destructive' });
+      } else {
+        setFoundUser(data as FoundUser);
+      }
+    } catch (e: any) {
+      toast({ title: 'Search failed', description: e.message || 'Try again', variant: 'destructive' });
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleCreditPrize = async () => {
+    if (!foundUser) return;
+    const amt = parseFloat(prizeAmount);
+    if (!amt || amt <= 0) {
+      toast({ title: 'Invalid amount', description: 'Enter a positive amount', variant: 'destructive' });
+      return;
+    }
+    setCrediting(true);
+    try {
+      const { error } = await supabase.from('wallet_transactions').insert([{
+        user_id: foundUser.user_id,
+        transaction_type: 'prize_winning',
+        amount: amt,
+        status: 'approved',
+        payment_method: 'Tournament Prize',
+        transaction_reference: prizeNote || 'Tournament prize awarded by admin',
+        admin_notes: prizeNote || null,
+        mode,
+        approved_at: new Date().toISOString(),
+      }]);
+      if (error) throw error;
+      toast({ title: 'Prize credited', description: `₹${amt} added to ${foundUser.email || foundUser.user_id}` });
+      setPrizeAmount('');
+      setPrizeNote('');
+      setFoundUser(null);
+      setLookupValue('');
+      loadTransactions();
+    } catch (e: any) {
+      toast({ title: 'Failed to credit prize', description: e.message || 'Try again', variant: 'destructive' });
+    } finally {
+      setCrediting(false);
+    }
+  };
+
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -120,7 +206,89 @@ const WalletAdmin = ({ mode = 'esports' }: WalletAdminProps) => {
         <span className={`text-${modeColor}-400 font-medium`}>{modeLabel} Wallet</span>
       </div>
 
+      {/* Credit Winning Amount */}
+      <Card className="bg-gradient-to-br from-yellow-900/30 to-amber-800/20 border-yellow-500/30">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center">
+            <Trophy className="w-5 h-5 mr-2 text-yellow-400" />
+            Credit Tournament Prize to User ({modeLabel})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-[160px_1fr_auto] gap-3">
+            <div>
+              <Label className="text-gray-300 text-xs">Lookup by</Label>
+              <Select value={lookupType} onValueChange={(v) => { setLookupType(v as LookupType); setFoundUser(null); }}>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="phone">Phone Number</SelectItem>
+                  <SelectItem value="user_id">User ID</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-gray-300 text-xs">{lookupType === 'email' ? 'Email address' : lookupType === 'phone' ? 'Phone number' : 'User ID (UUID)'}</Label>
+              <Input
+                value={lookupValue}
+                onChange={(e) => setLookupValue(e.target.value)}
+                placeholder={lookupType === 'email' ? 'user@example.com' : lookupType === 'phone' ? '9876543210' : 'uuid'}
+                className="bg-gray-700 border-gray-600 text-white"
+              />
+            </div>
+            <div className="flex items-end">
+              <Button onClick={handleSearchUser} disabled={searching} className="bg-blue-600 hover:bg-blue-700">
+                <Search className="w-4 h-4 mr-1" />
+                {searching ? 'Searching...' : 'Find User'}
+              </Button>
+            </div>
+          </div>
+
+          {foundUser && (
+            <div className="bg-gray-800/60 border border-gray-700 rounded-lg p-4 space-y-3">
+              <div className="grid sm:grid-cols-2 gap-2 text-sm">
+                <div><span className="text-gray-400">Name:</span> <span className="text-white">{foundUser.display_name || foundUser.username || '—'}</span></div>
+                <div><span className="text-gray-400">Email:</span> <span className="text-white">{foundUser.email || '—'}</span></div>
+                <div><span className="text-gray-400">Phone:</span> <span className="text-white">{foundUser.phone_number || '—'}</span></div>
+                <div><span className="text-gray-400">User ID:</span> <span className="text-purple-400 font-mono text-xs">{foundUser.user_id}</span></div>
+              </div>
+              <div className="grid md:grid-cols-[180px_1fr_auto] gap-3">
+                <div>
+                  <Label className="text-gray-300 text-xs">Prize Amount (₹)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={prizeAmount}
+                    onChange={(e) => setPrizeAmount(e.target.value)}
+                    placeholder="500"
+                    className="bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+                <div>
+                  <Label className="text-gray-300 text-xs">Note / Tournament</Label>
+                  <Input
+                    value={prizeNote}
+                    onChange={(e) => setPrizeNote(e.target.value)}
+                    placeholder="e.g. BGMI Solo Cup - 1st place"
+                    className="bg-gray-700 border-gray-600 text-white"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button onClick={handleCreditPrize} disabled={crediting} className="bg-green-600 hover:bg-green-700">
+                    <Trophy className="w-4 h-4 mr-1" />
+                    {crediting ? 'Crediting...' : 'Credit Prize'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid md:grid-cols-3 gap-6">
+
         <Card className="bg-gradient-to-br from-green-900/50 to-green-800/50 border-green-500/30">
           <CardContent className="p-6 text-center">
             <DollarSign className="w-8 h-8 text-green-400 mx-auto mb-2" />
