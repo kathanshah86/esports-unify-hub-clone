@@ -103,6 +103,69 @@ const WalletAdmin = ({ mode = 'esports' }: WalletAdminProps) => {
     }
   };
 
+  const handleSearchUser = async () => {
+    const val = lookupValue.trim();
+    if (!val) {
+      toast({ title: 'Enter a value', description: 'Provide an email, phone, or user ID', variant: 'destructive' });
+      return;
+    }
+    setSearching(true);
+    setFoundUser(null);
+    try {
+      let query = supabase.from('profiles').select('user_id, email, phone_number, username, display_name').limit(1);
+      if (lookupType === 'email') query = query.ilike('email', val);
+      else if (lookupType === 'phone') query = query.eq('phone_number', val);
+      else query = query.eq('user_id', val);
+
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        toast({ title: 'User not found', description: `No profile matched that ${lookupType}`, variant: 'destructive' });
+      } else {
+        setFoundUser(data as FoundUser);
+      }
+    } catch (e: any) {
+      toast({ title: 'Search failed', description: e.message || 'Try again', variant: 'destructive' });
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleCreditPrize = async () => {
+    if (!foundUser) return;
+    const amt = parseFloat(prizeAmount);
+    if (!amt || amt <= 0) {
+      toast({ title: 'Invalid amount', description: 'Enter a positive amount', variant: 'destructive' });
+      return;
+    }
+    setCrediting(true);
+    try {
+      const { error } = await supabase.from('wallet_transactions').insert([{
+        user_id: foundUser.user_id,
+        transaction_type: 'prize_winning',
+        amount: amt,
+        status: 'approved',
+        payment_method: 'Tournament Prize',
+        transaction_reference: prizeNote || 'Tournament prize awarded by admin',
+        admin_notes: prizeNote || null,
+        mode,
+        approved_at: new Date().toISOString(),
+      }]);
+      if (error) throw error;
+      toast({ title: 'Prize credited', description: `₹${amt} added to ${foundUser.email || foundUser.user_id}` });
+      setPrizeAmount('');
+      setPrizeNote('');
+      setFoundUser(null);
+      setLookupValue('');
+      loadTransactions();
+    } catch (e: any) {
+      toast({ title: 'Failed to credit prize', description: e.message || 'Try again', variant: 'destructive' });
+    } finally {
+      setCrediting(false);
+    }
+  };
+
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
