@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ModeProvider } from "@/contexts/ModeContext";
 import { Component, lazy, Suspense } from "react";
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 
 // Welcome/Landing - eager load for first paint
@@ -19,7 +19,7 @@ const isChunkLoadError = (error: unknown) => {
   return /Importing a module script failed|Failed to fetch dynamically imported module|Loading chunk \d+ failed|ChunkLoadError/i.test(message);
 };
 
-const lazyWithReload = <T extends { default: React.ComponentType<any> }>(
+const lazyWithReload = <T extends { default: ComponentType<any> }>(
   importer: () => Promise<T>
 ) =>
   lazy(async () => {
