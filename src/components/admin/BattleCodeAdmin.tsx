@@ -299,7 +299,7 @@ const BattleCodeAdmin = ({ mode = 'esports' }: BattleCodeAdminProps) => {
           <CardContent className="p-6 text-center">
             <Users className="w-8 h-8 text-blue-400 mx-auto mb-2" />
             <div className="text-2xl font-bold text-white">
-              {codes.reduce((acc, c) => acc + c.current_uses, 0)}
+              {redemptions.length}
             </div>
             <div className="text-blue-300 text-sm">Total Redemptions</div>
           </CardContent>
