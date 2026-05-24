@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,8 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, Edit, Ticket, Gift, Users, Calendar } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Trash2, Edit, Ticket, Gift, Users, Calendar, History } from 'lucide-react';
 import { battleCodeService, BattleCode, BattleCodeMode } from '@/services/battleCodeService';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
@@ -20,6 +22,13 @@ const BattleCodeAdmin = ({ mode = 'esports' }: BattleCodeAdminProps) => {
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingCode, setEditingCode] = useState<BattleCode | null>(null);
+
+  // Redemptions state
+  const [redemptions, setRedemptions] = useState<any[]>([]);
+  const [redemptionsLoading, setRedemptionsLoading] = useState(false);
+  const [tournaments, setTournaments] = useState<{ id: string; name: string }[]>([]);
+  const [tournamentFilter, setTournamentFilter] = useState<string>('all');
+
   const { toast } = useToast();
 
   // Form state
@@ -33,7 +42,93 @@ const BattleCodeAdmin = ({ mode = 'esports' }: BattleCodeAdminProps) => {
 
   useEffect(() => {
     loadCodes();
+    loadRedemptions();
   }, [mode]);
+
+  const loadRedemptions = async () => {
+    setRedemptionsLoading(true);
+    try {
+      // 1. redemptions for this mode
+      const { data: reds, error } = await supabase
+        .from('battle_code_redemptions')
+        .select('id, code_id, user_id, amount, mode, redeemed_at')
+        .eq('mode', mode)
+        .order('redeemed_at', { ascending: false });
+      if (error) throw error;
+      const redemptionsData = reds || [];
+
+      const codeIds = Array.from(new Set(redemptionsData.map(r => r.code_id).filter(Boolean)));
+      const userIds = Array.from(new Set(redemptionsData.map(r => r.user_id).filter(Boolean)));
+
+      const [{ data: codesData }, { data: profilesData }] = await Promise.all([
+        codeIds.length
+          ? supabase.from('battle_codes').select('id, code, bonus_amount').in('id', codeIds)
+          : Promise.resolve({ data: [] as any[] }),
+        userIds.length
+          ? supabase.from('profiles').select('user_id, username, display_name, email, phone_number').in('user_id', userIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+
+      const codeMap = new Map((codesData || []).map((c: any) => [c.id, c]));
+      const userMap = new Map((profilesData || []).map((p: any) => [p.user_id, p]));
+
+      // 2. tournament registrations that used these codes (to know which tournament(s))
+      const codeStrings = Array.from(new Set((codesData || []).map((c: any) => c.code).filter(Boolean)));
+      let regsByUserCode = new Map<string, any[]>();
+      let tournamentMap = new Map<string, { id: string; name: string }>();
+      if (codeStrings.length && userIds.length) {
+        const { data: regs } = await supabase
+          .from('tournament_registrations')
+          .select('user_id, referral_code_used, tournament_id, created_at')
+          .in('referral_code_used', codeStrings)
+          .in('user_id', userIds);
+
+        const tIds = Array.from(new Set((regs || []).map((r: any) => r.tournament_id).filter(Boolean)));
+        if (tIds.length) {
+          const { data: tData } = await supabase
+            .from('tournaments')
+            .select('id, name')
+            .in('id', tIds);
+          (tData || []).forEach((t: any) => tournamentMap.set(t.id, t));
+        }
+        (regs || []).forEach((r: any) => {
+          const key = `${r.user_id}__${(r.referral_code_used || '').toUpperCase()}`;
+          if (!regsByUserCode.has(key)) regsByUserCode.set(key, []);
+          regsByUserCode.get(key)!.push(r);
+        });
+      }
+
+      const enriched = redemptionsData.map((r: any) => {
+        const code = codeMap.get(r.code_id);
+        const user = userMap.get(r.user_id);
+        const key = `${r.user_id}__${(code?.code || '').toUpperCase()}`;
+        const regs = regsByUserCode.get(key) || [];
+        const usedTournaments = regs
+          .map((reg: any) => tournamentMap.get(reg.tournament_id))
+          .filter(Boolean);
+        return { ...r, code, user, usedTournaments };
+      });
+
+      setRedemptions(enriched);
+      setTournaments(Array.from(tournamentMap.values()));
+    } catch (err) {
+      console.error('Failed to load redemptions:', err);
+    } finally {
+      setRedemptionsLoading(false);
+    }
+  };
+
+  const filteredRedemptions = useMemo(() => {
+    if (tournamentFilter === 'all') return redemptions;
+    if (tournamentFilter === 'none') {
+      return redemptions.filter(r => !r.usedTournaments || r.usedTournaments.length === 0);
+    }
+    return redemptions.filter(r =>
+      (r.usedTournaments || []).some((t: any) => t.id === tournamentFilter)
+    );
+  }, [redemptions, tournamentFilter]);
+
+
 
   const loadCodes = async () => {
     try {
@@ -204,7 +299,7 @@ const BattleCodeAdmin = ({ mode = 'esports' }: BattleCodeAdminProps) => {
           <CardContent className="p-6 text-center">
             <Users className="w-8 h-8 text-blue-400 mx-auto mb-2" />
             <div className="text-2xl font-bold text-white">
-              {codes.reduce((acc, c) => acc + c.current_uses, 0)}
+              {redemptions.length}
             </div>
             <div className="text-blue-300 text-sm">Total Redemptions</div>
           </CardContent>
@@ -363,6 +458,77 @@ const BattleCodeAdmin = ({ mode = 'esports' }: BattleCodeAdminProps) => {
                     </div>
                   </CardContent>
                 </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Redemptions */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <CardTitle className="text-white flex items-center">
+            <History className="w-5 h-5 mr-2" />
+            Battle Code Redemptions ({filteredRedemptions.length})
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Label className="text-gray-400 text-sm whitespace-nowrap">Filter by tournament:</Label>
+            <Select value={tournamentFilter} onValueChange={setTournamentFilter}>
+              <SelectTrigger className="w-64 bg-gray-900 border-gray-700 text-white">
+                <SelectValue placeholder="All tournaments" />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-900 border-gray-700 max-h-72">
+                <SelectItem value="all">All tournaments</SelectItem>
+                <SelectItem value="none">No tournament registered</SelectItem>
+                {tournaments.map(t => (
+                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {redemptionsLoading ? (
+            <div className="text-center text-gray-400 py-6">Loading redemptions...</div>
+          ) : filteredRedemptions.length === 0 ? (
+            <div className="text-center text-gray-400 py-6">No redemptions found</div>
+          ) : (
+            <div className="space-y-3">
+              {filteredRedemptions.map((r) => (
+                <div key={r.id} className="bg-gray-700/50 border border-gray-600 rounded-lg p-3">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono font-bold text-white">{r.code?.code || '—'}</span>
+                        <Badge className="bg-green-600">₹{Number(r.amount).toFixed(2)}</Badge>
+                        <span className="text-gray-400 text-xs">
+                          {format(new Date(r.redeemed_at), 'dd MMM yyyy, HH:mm')}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-300">
+                        <span className="text-gray-500">User:</span>{' '}
+                        {r.user?.display_name || r.user?.username || '—'}
+                      </div>
+                      <div className="text-xs text-gray-400 flex flex-wrap gap-x-4">
+                        {r.user?.email && <span>Email: <span className="text-white">{r.user.email}</span></span>}
+                        {r.user?.phone_number && <span>Phone: <span className="text-white">{r.user.phone_number}</span></span>}
+                      </div>
+                    </div>
+                    <div className="text-xs">
+                      {r.usedTournaments && r.usedTournaments.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 justify-end">
+                          {r.usedTournaments.map((t: any) => (
+                            <Badge key={t.id} className="bg-purple-600/70">{t.name}</Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="border-gray-500 text-gray-400">
+                          Not used for tournament yet
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           )}

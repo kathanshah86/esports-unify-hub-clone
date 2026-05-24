@@ -28,6 +28,11 @@ interface Registration {
   referrer_user_id: string | null;
   referrer_name?: string | null;
   referrer_email?: string | null;
+  user_email?: string | null;
+  user_phone?: string | null;
+  user_username?: string | null;
+  user_display_name?: string | null;
+  user_in_game_name?: string | null;
 }
 
 interface Tournament {
@@ -145,6 +150,26 @@ const TournamentRegistrationsAdmin = () => {
 
       if (error) throw error;
       const regs = (data || []) as Registration[];
+
+      // Fetch user profile info for each registration (email, phone, username)
+      const userIds = Array.from(new Set(regs.map(r => r.user_id).filter(Boolean)));
+      if (userIds.length > 0) {
+        const { data: userProfs } = await supabase
+          .from('profiles')
+          .select('user_id, username, display_name, email, phone_number, in_game_name')
+          .in('user_id', userIds);
+        const uMap = new Map((userProfs || []).map(p => [p.user_id, p]));
+        regs.forEach(r => {
+          const p = uMap.get(r.user_id);
+          if (p) {
+            r.user_email = p.email || null;
+            r.user_phone = p.phone_number || null;
+            r.user_username = p.username || null;
+            r.user_display_name = p.display_name || null;
+            r.user_in_game_name = p.in_game_name || null;
+          }
+        });
+      }
 
       // Fetch referrer profile info for registrations that used a battle code
       const referrerIds = Array.from(
@@ -480,7 +505,25 @@ const TournamentRegistrationsAdmin = () => {
                               </div>
                             </div>
                           )}
-                          <div className="text-gray-500 text-xs">
+                          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs bg-gray-800/40 rounded p-2 border border-gray-700/50">
+                            {registration.user_email && (
+                              <div className="text-gray-400">Email: <span className="text-white">{registration.user_email}</span></div>
+                            )}
+                            {registration.user_phone && (
+                              <div className="text-gray-400">Phone: <span className="text-white">{registration.user_phone}</span></div>
+                            )}
+                            {registration.user_username && (
+                              <div className="text-gray-400">Username: <span className="text-white">{registration.user_username}</span></div>
+                            )}
+                            {registration.user_display_name && (
+                              <div className="text-gray-400">Name: <span className="text-white">{registration.user_display_name}</span></div>
+                            )}
+                            {registration.user_in_game_name && (
+                              <div className="text-gray-400">IGN: <span className="text-white">{registration.user_in_game_name}</span></div>
+                            )}
+                            <div className="text-gray-400">User ID: <span className="text-white font-mono">{registration.user_id.slice(0, 8)}…</span></div>
+                          </div>
+                          <div className="text-gray-500 text-xs mt-1">
                             {new Date(registration.created_at || '').toLocaleString()}
                           </div>
                         </div>
