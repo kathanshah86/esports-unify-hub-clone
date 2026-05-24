@@ -335,11 +335,11 @@ const Wallet = forwardRef<HTMLDivElement>((_, ref) => {
       setWithdrawName('');
       setWithdrawMobile('');
       loadWalletData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting withdrawal:', error);
       toast({
         title: "Request Failed",
-        description: "Failed to submit withdrawal request. Please try again.",
+        description: error?.message || "Failed to submit withdrawal request. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -522,10 +522,19 @@ const Wallet = forwardRef<HTMLDivElement>((_, ref) => {
               Battle Coin
             </Button>
             <Button 
-              onClick={() => setShowWithdrawDialog(true)}
+              onClick={() => {
+                if (availableBalance <= 0) {
+                  toast({
+                    title: "No Balance Available",
+                    description: "You have no withdrawable balance. Win a tournament or wait for a pending withdrawal to be processed.",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                setShowWithdrawDialog(true);
+              }}
               variant="outline"
               className="border-2 border-pink-500/50 text-pink-400 hover:bg-pink-500/10 font-semibold px-6 sm:px-8 py-5 sm:py-6 text-base sm:text-lg rounded-xl transition-all hover:scale-105"
-              disabled={availableBalance <= 0}
             >
               <Minus className="w-5 h-5 mr-2" />
               Withdraw Funds
