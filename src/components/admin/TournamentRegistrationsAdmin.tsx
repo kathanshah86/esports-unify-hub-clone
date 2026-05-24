@@ -28,6 +28,11 @@ interface Registration {
   referrer_user_id: string | null;
   referrer_name?: string | null;
   referrer_email?: string | null;
+  user_email?: string | null;
+  user_phone?: string | null;
+  user_username?: string | null;
+  user_display_name?: string | null;
+  user_in_game_name?: string | null;
 }
 
 interface Tournament {
