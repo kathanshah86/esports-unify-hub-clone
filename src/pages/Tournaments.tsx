@@ -208,9 +208,13 @@ const Tournaments = () => {
           </CardContent>
         </Card>
 
-        {/* Tournament Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {filteredTournaments.map((tournament) => (
+        {/* Tournament Sections */}
+        {(() => {
+          const liveTournaments = filteredTournaments.filter(t => t.status === 'ongoing');
+          const upcomingTournaments = filteredTournaments.filter(t => t.status === 'upcoming');
+          const pastTournaments = filteredTournaments.filter(t => t.status === 'completed');
+
+          const renderCard = (tournament: typeof filteredTournaments[number]) => (
             <Card key={tournament.id} className="bg-gray-800 border-gray-700 hover:border-purple-500/50 transition-all duration-300 group cursor-pointer">
               <div className="aspect-video relative overflow-hidden rounded-t-lg">
                 {tournament.banner ? (
@@ -223,8 +227,7 @@ const Tournaments = () => {
                   <div className="w-full h-full bg-gradient-to-br from-purple-900/30 to-blue-900/30"></div>
                 )}
                 <div className="absolute inset-0 bg-black/20"></div>
-                
-                {/* Status and Game Tags */}
+
                 <div className="absolute top-4 left-4 flex gap-2">
                   <Badge className={`flex items-center gap-1.5 px-3 py-1 text-sm font-bold
                     ${tournament.status === 'ongoing' ? 'bg-green-500 text-white animate-pulse' : 
@@ -240,8 +243,7 @@ const Tournaments = () => {
                     {tournament.game || 'battle-royale'}
                   </Badge>
                 </div>
-                
-                {/* Entry Fee */}
+
                 {tournament.entry_fee && (
                   <div className="absolute top-4 right-4">
                     <Badge className="bg-green-500 text-white">
@@ -250,22 +252,18 @@ const Tournaments = () => {
                   </div>
                 )}
 
-                {/* Live 1v1 Scores */}
                 <div className="absolute bottom-4 left-4">
                   <LiveMatchScoreBadge tournamentId={tournament.id} />
                   <TournamentCardTimer tournament={tournament} />
                 </div>
-                
-                {/* Prize Pool */}
-                
-                {/* Prize Pool */}
+
                 <div className="absolute bottom-4 right-4">
                   <Badge className="bg-yellow-500 text-black font-bold">
                     {tournament.prize_pool}
                   </Badge>
                 </div>
               </div>
-              
+
               <CardContent className="p-4 sm:p-5 md:p-6">
                 <h3 className="text-white font-bold text-lg mb-2 group-hover:text-purple-400 transition-colors line-clamp-1">
                   {tournament.name}
@@ -279,7 +277,7 @@ const Tournaments = () => {
                     <>Starts {new Date(tournament.start_date).toLocaleDateString()}</>
                   )}
                 </p>
-                
+
                 <div className="grid grid-cols-3 gap-2 mb-4 text-center text-sm">
                   <div>
                     <p className="text-gray-400">Prize Pool</p>
@@ -294,7 +292,7 @@ const Tournaments = () => {
                     <p className="text-white font-semibold">{tournament.region || 'Global'}</p>
                   </div>
                 </div>
-                
+
                 <Button 
                   className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
                   onClick={() => navigate(`/tournaments/${tournament.id}`)}
@@ -303,8 +301,33 @@ const Tournaments = () => {
                 </Button>
               </CardContent>
             </Card>
-          ))}
-        </div>
+          );
+
+          const Section = ({ title, icon, accent, items }: { title: string; icon: React.ReactNode; accent: string; items: typeof filteredTournaments }) => {
+            if (items.length === 0) return null;
+            return (
+              <section className="mb-10">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className={accent}>{icon}</span>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">{title}</h2>
+                  <Badge variant="secondary" className="bg-gray-700 text-gray-200">{items.length}</Badge>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {items.map(renderCard)}
+                </div>
+              </section>
+            );
+          };
+
+          return (
+            <>
+              <Section title="Live Tournaments" icon={<PlayCircle className="w-6 h-6" />} accent="text-green-400" items={liveTournaments} />
+              <Section title="Upcoming Tournaments" icon={<Clock className="w-6 h-6" />} accent="text-blue-400" items={upcomingTournaments} />
+              <Section title="Past Tournaments" icon={<CheckCircle className="w-6 h-6" />} accent="text-gray-400" items={pastTournaments} />
+            </>
+          );
+        })()}
+
 
         {filteredTournaments.length === 0 && (
           <div className="text-center py-12">
