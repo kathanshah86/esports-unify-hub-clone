@@ -76,7 +76,9 @@ const Tournaments = () => {
     );
   }
 
-  if (error) {
+  // Only block render if tournaments failed to load entirely.
+  // Other unrelated store errors (e.g. match updates) should not hide the page.
+  if (error && tournaments.length === 0 && !isLoading) {
     return (
       <Layout>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
