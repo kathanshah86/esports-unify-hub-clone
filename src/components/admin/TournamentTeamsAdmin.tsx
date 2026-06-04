@@ -219,7 +219,8 @@ const TournamentTeamsAdmin = () => {
         const { error: mErr } = await supabase
           .from('tournament_team_members')
           .insert({ team_id: newTeam.id, user_id: uid, role: 'member' });
-        if (mErr) addedFailures.push(`${ident} (${mErr.message})`);
+        if (mErr) { addedFailures.push(`${ident} (${mErr.message})`); continue; }
+        await upsertRegistration(uid);
       }
 
       toast({
