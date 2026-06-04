@@ -24,6 +24,7 @@ import AdminRolesManager from '@/components/admin/AdminRolesManager';
 import PointsTableAdmin from '@/components/admin/PointsTableAdmin';
 import BattleCodeAdmin from '@/components/admin/BattleCodeAdmin';
 import TournamentRegistrationsAdmin from '@/components/admin/TournamentRegistrationsAdmin';
+import TournamentTeamsAdmin from '@/components/admin/TournamentTeamsAdmin';
 import AISettingsAdmin from '@/components/admin/AISettingsAdmin';
 import SupportChatAdmin from '@/components/admin/SupportChatAdmin';
 import AllDetailsAdmin from '@/components/admin/AllDetailsAdmin';
@@ -561,6 +562,10 @@ const Admin = () => {
               <ClipboardList className="w-4 h-4 mr-2" />
               Registrations
             </TabsTrigger>
+            <TabsTrigger value="teams" className="data-[state=active]:bg-purple-500">
+              <Users className="w-4 h-4 mr-2" />
+              Teams
+            </TabsTrigger>
             <TabsTrigger value="players" className="data-[state=active]:bg-purple-500">
               <Users className="w-4 h-4 mr-2" />
               Players
@@ -623,6 +628,12 @@ const Admin = () => {
           <TabsContent value="registrations" className="space-y-6">
             <TournamentRegistrationsAdmin />
           </TabsContent>
+
+          {/* Teams Tab */}
+          <TabsContent value="teams" className="space-y-6">
+            <TournamentTeamsAdmin />
+          </TabsContent>
+
 
           {/* Tournaments Tab */}
           <TabsContent value="tournaments" className="space-y-6">
