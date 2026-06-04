@@ -24,6 +24,7 @@ import AdminRolesManager from '@/components/admin/AdminRolesManager';
 import PointsTableAdmin from '@/components/admin/PointsTableAdmin';
 import BattleCodeAdmin from '@/components/admin/BattleCodeAdmin';
 import TournamentRegistrationsAdmin from '@/components/admin/TournamentRegistrationsAdmin';
+import TournamentTeamsAdmin from '@/components/admin/TournamentTeamsAdmin';
 import AISettingsAdmin from '@/components/admin/AISettingsAdmin';
 import SupportChatAdmin from '@/components/admin/SupportChatAdmin';
 import AllDetailsAdmin from '@/components/admin/AllDetailsAdmin';
