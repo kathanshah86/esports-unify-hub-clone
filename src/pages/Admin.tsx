@@ -629,6 +629,12 @@ const Admin = () => {
             <TournamentRegistrationsAdmin />
           </TabsContent>
 
+          {/* Teams Tab */}
+          <TabsContent value="teams" className="space-y-6">
+            <TournamentTeamsAdmin />
+          </TabsContent>
+
+
           {/* Tournaments Tab */}
           <TabsContent value="tournaments" className="space-y-6">
             <div className="flex justify-between items-center">
