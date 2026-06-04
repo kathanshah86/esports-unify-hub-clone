@@ -318,6 +318,7 @@ const TournamentTeamsAdmin = () => {
         .from('tournament_team_members')
         .insert({ team_id: teamId, user_id: uid, role: 'member' });
       if (error) throw error;
+      await upsertRegistration(uid);
       toast({ title: 'Member added' });
       loadTeams();
     } catch (e: any) {
