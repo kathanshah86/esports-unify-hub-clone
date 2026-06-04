@@ -137,6 +137,42 @@ const TournamentTeamsAdmin = () => {
     return data?.user_id || null;
   };
 
+  // Mirror membership into tournament_registrations
+  const upsertRegistration = async (userId: string) => {
+    if (!selectedId) return;
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('display_name, username, email, phone_number')
+      .eq('user_id', userId)
+      .maybeSingle();
+    const playerName = prof?.display_name || prof?.username || prof?.email || 'Admin Added';
+    const gameId = prof?.username || prof?.email || prof?.phone_number || userId.slice(0, 8);
+    await supabase
+      .from('tournament_registrations')
+      .upsert(
+        {
+          tournament_id: selectedId,
+          user_id: userId,
+          player_name: playerName,
+          game_id: gameId,
+          status: 'registered',
+          payment_status: 'completed',
+          payment_amount: 0,
+        },
+        { onConflict: 'tournament_id,user_id' }
+      );
+  };
+
+  const removeRegistration = async (userId: string, tournamentId?: string) => {
+    const tid = tournamentId || selectedId;
+    if (!tid) return;
+    await supabase
+      .from('tournament_registrations')
+      .delete()
+      .eq('tournament_id', tid)
+      .eq('user_id', userId);
+  };
+
   const handleCreateTeam = async () => {
     if (!selectedId) return;
     if (!teamName.trim() || !captainIdent.trim()) {
