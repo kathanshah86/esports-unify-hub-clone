@@ -137,6 +137,42 @@ const TournamentTeamsAdmin = () => {
     return data?.user_id || null;
   };
 
+  // Mirror membership into tournament_registrations
+  const upsertRegistration = async (userId: string) => {
+    if (!selectedId) return;
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('display_name, username, email, phone_number')
+      .eq('user_id', userId)
+      .maybeSingle();
+    const playerName = prof?.display_name || prof?.username || prof?.email || 'Admin Added';
+    const gameId = prof?.username || prof?.email || prof?.phone_number || userId.slice(0, 8);
+    await supabase
+      .from('tournament_registrations')
+      .upsert(
+        {
+          tournament_id: selectedId,
+          user_id: userId,
+          player_name: playerName,
+          game_id: gameId,
+          status: 'registered',
+          payment_status: 'completed',
+          payment_amount: 0,
+        },
+        { onConflict: 'tournament_id,user_id' }
+      );
+  };
+
+  const removeRegistration = async (userId: string, tournamentId?: string) => {
+    const tid = tournamentId || selectedId;
+    if (!tid) return;
+    await supabase
+      .from('tournament_registrations')
+      .delete()
+      .eq('tournament_id', tid)
+      .eq('user_id', userId);
+  };
+
   const handleCreateTeam = async () => {
     if (!selectedId) return;
     if (!teamName.trim() || !captainIdent.trim()) {
@@ -165,6 +201,10 @@ const TournamentTeamsAdmin = () => {
         .single();
       if (tErr) throw tErr;
 
+      // Register captain
+      await upsertRegistration(captainId);
+
+
       // Add extra members
       const extras = membersIdent
         .split(/[\n,]+/)
@@ -179,7 +219,8 @@ const TournamentTeamsAdmin = () => {
         const { error: mErr } = await supabase
           .from('tournament_team_members')
           .insert({ team_id: newTeam.id, user_id: uid, role: 'member' });
-        if (mErr) addedFailures.push(`${ident} (${mErr.message})`);
+        if (mErr) { addedFailures.push(`${ident} (${mErr.message})`); continue; }
+        await upsertRegistration(uid);
       }
 
       toast({
@@ -201,6 +242,17 @@ const TournamentTeamsAdmin = () => {
     if (!confirm('Remove this whole team and all its members? This bypasses normal process.')) return;
     setBusyId(teamId);
     try {
+      // Fetch team + members so we can also remove their registrations
+      const { data: teamRow } = await supabase
+        .from('tournament_teams')
+        .select('tournament_id')
+        .eq('id', teamId)
+        .maybeSingle();
+      const { data: memberRows } = await supabase
+        .from('tournament_team_members')
+        .select('user_id')
+        .eq('team_id', teamId);
+
       // Delete members first to satisfy trigger counts
       const { error: mErr } = await supabase
         .from('tournament_team_members')
@@ -213,6 +265,12 @@ const TournamentTeamsAdmin = () => {
         .delete()
         .eq('id', teamId);
       if (tErr) throw tErr;
+
+      // Remove tournament registrations for all members
+      const tid = teamRow?.tournament_id || selectedId;
+      for (const m of memberRows || []) {
+        await removeRegistration(m.user_id, tid);
+      }
 
       toast({ title: 'Team removed', description: 'Team and members deleted' });
       loadTeams();
@@ -236,6 +294,7 @@ const TournamentTeamsAdmin = () => {
         .delete()
         .eq('id', memberId);
       if (error) throw error;
+      await removeRegistration(userId);
       toast({ title: 'Member removed' });
       loadTeams();
     } catch (e: any) {
@@ -259,6 +318,7 @@ const TournamentTeamsAdmin = () => {
         .from('tournament_team_members')
         .insert({ team_id: teamId, user_id: uid, role: 'member' });
       if (error) throw error;
+      await upsertRegistration(uid);
       toast({ title: 'Member added' });
       loadTeams();
     } catch (e: any) {
