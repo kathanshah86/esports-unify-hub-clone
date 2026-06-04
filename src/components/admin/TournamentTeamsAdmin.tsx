@@ -242,6 +242,17 @@ const TournamentTeamsAdmin = () => {
     if (!confirm('Remove this whole team and all its members? This bypasses normal process.')) return;
     setBusyId(teamId);
     try {
+      // Fetch team + members so we can also remove their registrations
+      const { data: teamRow } = await supabase
+        .from('tournament_teams')
+        .select('tournament_id')
+        .eq('id', teamId)
+        .maybeSingle();
+      const { data: memberRows } = await supabase
+        .from('tournament_team_members')
+        .select('user_id')
+        .eq('team_id', teamId);
+
       // Delete members first to satisfy trigger counts
       const { error: mErr } = await supabase
         .from('tournament_team_members')
@@ -254,6 +265,12 @@ const TournamentTeamsAdmin = () => {
         .delete()
         .eq('id', teamId);
       if (tErr) throw tErr;
+
+      // Remove tournament registrations for all members
+      const tid = teamRow?.tournament_id || selectedId;
+      for (const m of memberRows || []) {
+        await removeRegistration(m.user_id, tid);
+      }
 
       toast({ title: 'Team removed', description: 'Team and members deleted' });
       loadTeams();
