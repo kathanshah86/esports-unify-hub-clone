@@ -201,6 +201,10 @@ const TournamentTeamsAdmin = () => {
         .single();
       if (tErr) throw tErr;
 
+      // Register captain
+      await upsertRegistration(captainId);
+
+
       // Add extra members
       const extras = membersIdent
         .split(/[\n,]+/)
