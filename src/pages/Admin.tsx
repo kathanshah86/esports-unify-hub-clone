@@ -562,6 +562,10 @@ const Admin = () => {
               <ClipboardList className="w-4 h-4 mr-2" />
               Registrations
             </TabsTrigger>
+            <TabsTrigger value="teams" className="data-[state=active]:bg-purple-500">
+              <Users className="w-4 h-4 mr-2" />
+              Teams
+            </TabsTrigger>
             <TabsTrigger value="players" className="data-[state=active]:bg-purple-500">
               <Users className="w-4 h-4 mr-2" />
               Players
