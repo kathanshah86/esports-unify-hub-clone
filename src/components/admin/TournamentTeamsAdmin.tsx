@@ -294,6 +294,7 @@ const TournamentTeamsAdmin = () => {
         .delete()
         .eq('id', memberId);
       if (error) throw error;
+      await removeRegistration(userId);
       toast({ title: 'Member removed' });
       loadTeams();
     } catch (e: any) {
