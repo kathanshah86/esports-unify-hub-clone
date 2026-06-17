@@ -324,7 +324,7 @@ const TeamRegistration: React.FC<TeamRegistrationProps> = ({ tournament }) => {
 
       toast({
         title: "Team Created!",
-        description: `₹${totalLeaderAmount} deducted from wallet (₹${entryFeeAmount} × ${teamSize}). Share your team code for others to join free!`,
+        description: `₹${totalLeaderAmount} deducted from wallet. Share your team code for others to join free!`,
       });
 
       loadUserData();
