@@ -1025,7 +1025,7 @@ const TeamRegistration: React.FC<TeamRegistrationProps> = ({ tournament }) => {
             {isLeaderPays && !isFree && (
               <p className="text-sm text-blue-300 mt-1 flex items-center gap-1">
                 <Wallet className="w-4 h-4" />
-                Leader pays ₹{totalLeaderAmount} (₹{entryFeeAmount} × {teamSize}) for entire team. Members join free.
+                Leader pays ₹{totalLeaderAmount} for entire team. Members join free.
               </p>
             )}
           </div>
