@@ -72,9 +72,9 @@ const TeamRegistration: React.FC<TeamRegistrationProps> = ({ tournament }) => {
   const isFree = !tournament.entry_fee || tournament.entry_fee === 'Free' || tournament.entry_fee === '0' || tournament.entry_fee === '₹0';
   const entryFeeAmount = isFree ? 0 : parseInt(tournament.entry_fee?.replace(/[^0-9]/g, '') || '0');
   
-  // Check if leader pays for all
+  // Check if leader pays for all - leader pays the flat entry fee once for the whole team
   const isLeaderPays = (tournament as any).team_payment_mode === 'leader_pays';
-  const totalLeaderAmount = isLeaderPays ? entryFeeAmount * teamSize : entryFeeAmount;
+  const totalLeaderAmount = entryFeeAmount;
 
   const getTeamModeLabel = () => {
     if (teamSize === 1) return 'Solo';
