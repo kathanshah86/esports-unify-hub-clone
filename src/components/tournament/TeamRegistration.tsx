@@ -797,7 +797,7 @@ const TeamRegistration: React.FC<TeamRegistrationProps> = ({ tournament }) => {
                   <p className="font-medium">Leader Pays Mode</p>
                 </div>
                 <p className="text-sm text-blue-200/80 mt-1">
-                  You paid ₹{totalLeaderAmount} (₹{entryFeeAmount} × {teamSize}) for the entire team. Members join free with your team code.
+                  You paid ₹{totalLeaderAmount} for the entire team. Members join free with your team code.
                 </p>
               </div>
             )}
