@@ -72,9 +72,9 @@ const TeamRegistration: React.FC<TeamRegistrationProps> = ({ tournament }) => {
   const isFree = !tournament.entry_fee || tournament.entry_fee === 'Free' || tournament.entry_fee === '0' || tournament.entry_fee === '₹0';
   const entryFeeAmount = isFree ? 0 : parseInt(tournament.entry_fee?.replace(/[^0-9]/g, '') || '0');
   
-  // Check if leader pays for all
+  // Check if leader pays for all - leader pays the flat entry fee once for the whole team
   const isLeaderPays = (tournament as any).team_payment_mode === 'leader_pays';
-  const totalLeaderAmount = isLeaderPays ? entryFeeAmount * teamSize : entryFeeAmount;
+  const totalLeaderAmount = entryFeeAmount;
 
   const getTeamModeLabel = () => {
     if (teamSize === 1) return 'Solo';
@@ -324,7 +324,7 @@ const TeamRegistration: React.FC<TeamRegistrationProps> = ({ tournament }) => {
 
       toast({
         title: "Team Created!",
-        description: `₹${totalLeaderAmount} deducted from wallet (₹${entryFeeAmount} × ${teamSize}). Share your team code for others to join free!`,
+        description: `₹${totalLeaderAmount} deducted from wallet. Share your team code for others to join free!`,
       });
 
       loadUserData();
@@ -797,7 +797,7 @@ const TeamRegistration: React.FC<TeamRegistrationProps> = ({ tournament }) => {
                   <p className="font-medium">Leader Pays Mode</p>
                 </div>
                 <p className="text-sm text-blue-200/80 mt-1">
-                  You paid ₹{totalLeaderAmount} (₹{entryFeeAmount} × {teamSize}) for the entire team. Members join free with your team code.
+                  You paid ₹{totalLeaderAmount} for the entire team. Members join free with your team code.
                 </p>
               </div>
             )}
@@ -1025,7 +1025,7 @@ const TeamRegistration: React.FC<TeamRegistrationProps> = ({ tournament }) => {
             {isLeaderPays && !isFree && (
               <p className="text-sm text-blue-300 mt-1 flex items-center gap-1">
                 <Wallet className="w-4 h-4" />
-                Leader pays ₹{totalLeaderAmount} (₹{entryFeeAmount} × {teamSize}) for entire team. Members join free.
+                Leader pays ₹{totalLeaderAmount} for entire team. Members join free.
               </p>
             )}
           </div>
